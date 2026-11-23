@@ -32,3 +32,21 @@ npm run dev
 cd ./backend
 npx nodemon
 ```
+
+## clonar el repo
+
+``` bash
+git clone https://github.com/oravlapg-glitch/proyectoVortex
+```
+ Comandos de funcionamiento de Git
+
+ ``` bash
+# guardar los cambios
+git add .
+
+# hacer una imagen (commit)
+git commit -m "descripcion"
+
+# subir cambios
+git push origin main
+```
