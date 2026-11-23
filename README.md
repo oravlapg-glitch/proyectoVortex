@@ -50,3 +50,8 @@ git commit -m "descripcion"
 # subir cambios
 git push origin main
 ```
+
+ ``` bash
+# descargar cambios de GH
+git pull
+```
