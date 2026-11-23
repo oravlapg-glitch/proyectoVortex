@@ -51,4 +51,7 @@ git commit -m "descripcion"
 git push origin main
 ```
 
-esto es una prueba
+``` bash
+# descargar cambios de GH
+git pull
+```
