@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { apiGet, apiPost, apiPatch } from '../api/api';
 import { useAuth } from '../context/AuthContext';
+import Icon from '../components/Icon';
 
 const ESTADOS = ['abierto', 'en_curso', 'pendiente_cliente', 'resuelto', 'cerrado'];
 // Estas transiciones las repito solo para decidir qué botones enseño; las valida el backend
@@ -38,28 +39,29 @@ export default function TicketDetalle() {
 
   return (
     <>
-      <p><Link to="/soporte">← Volver a soporte</Link></p>
-      <h1>{t.codigo} · {t.asunto}</h1>
-      <p><span className={'pill ' + t.estado}>{t.estado}</span> <span className={'pill ' + t.prioridad}>{t.prioridad}</span> <span className="pill">{t.categoria?.nombre}</span></p>
+      <p><Link to="/soporte" className="back"><Icon name="back" size={16} /> Volver a soporte</Link></p>
+      <span className="tag">{t.codigo}</span>
+      <h1 className="ticket-title">{t.asunto}</h1>
+      <p className="pills"><span className={'pill ' + t.estado}>{t.estado}</span> <span className={'pill ' + t.prioridad}>{t.prioridad}</span> <span className="pill">{t.categoria?.nombre}</span></p>
       {msg?.err && <p className="err">{msg.err}</p>}
       <div className="two">
         <div>
-          <div className="msg"><b>{t.cliente?.nombre}</b> (cliente) · {fecha(t.createdAt)}<br />{t.descripcion}</div>
+          <div className="msg"><div className="msg-head"><span className="avatar sm">{t.cliente?.nombre?.[0]}</span><b>{t.cliente?.nombre}</b><small className="muted">cliente · {fecha(t.createdAt)}</small></div>{t.descripcion}</div>
           {t.pedido && <p className="pill">Pedido {t.pedido.codigo} · {t.pedido.total.toFixed(2)} €</p>}
           {t.mensajes.map((m, i) => (
             <div key={i} className={'msg' + (m.autor?.rol !== 'CLIENTE' ? ' staff' : '')}>
-              <b>{m.autor?.nombre}</b> ({m.autor?.rol}) · {fecha(m.fecha)}<br />{m.texto}
+              <div className="msg-head"><span className="avatar sm">{m.autor?.nombre?.[0]}</span><b>{m.autor?.nombre}</b><small className="muted">{m.autor?.rol?.toLowerCase()} · {fecha(m.fecha)}</small></div>{m.texto}
             </div>
           ))}
           {t.estado !== 'cerrado' && (
-            <form onSubmit={responder}>
+            <form onSubmit={responder} className="card reply">
               <label htmlFor="resp">Tu respuesta</label>
               <textarea id="resp" rows={3} value={texto} onChange={(e) => setTexto(e.target.value)} required />
-              <p><button className="btn">Responder</button></p>
+              <p><button className="btn">Responder <Icon name="arrow" size={18} /></button></p>
             </form>
           )}
         </div>
-        <aside className="card">
+        <aside className="card sticky">
           <h3>Cliente: {t.cliente?.nombre}</h3>
           <p>Agente: {t.agente?.nombre || 'sin asignar'}</p>
           {siguientes.length > 0 && <p><b>Cambiar estado</b></p>}
@@ -83,9 +85,9 @@ export default function TicketDetalle() {
               </select>
             </>
           )}
-          <h3>Historial</h3>
+          <h3 className="mt">Historial</h3>
           {t.historial.map((h, i) => (
-            <p key={i} className="small">{fecha(h.fecha)} · {h.usuario?.nombre}: {h.de || 'nuevo'} → <b>{h.a}</b></p>
+            <p key={i} className="small timeline">{fecha(h.fecha)} · {h.usuario?.nombre}: {h.de || 'nuevo'} → <b>{h.a}</b></p>
           ))}
         </aside>
       </div>

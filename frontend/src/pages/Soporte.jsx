@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiGet, apiPost } from '../api/api';
 import { useAuth } from '../context/AuthContext';
+import Icon from '../components/Icon';
+import SectionHead from '../components/SectionHead';
 
 export default function Soporte() {
   const { user } = useAuth();
@@ -43,13 +45,15 @@ export default function Soporte() {
 
   return (
     <>
-      <h1>Soporte <span className="lime">Vortex</span></h1>
+      <SectionHead tag="Centro de ayuda" titulo={<>SOPORTE <span className="lime">VORTEX</span></>}>
+        ¿Problemas con una reserva, un pedido o tu cuenta? Abre un ticket y te respondemos lo antes posible.
+      </SectionHead>
       {msg?.err && <p className="err">{msg.err}</p>}
       {msg?.ok && <p className="ok">{msg.ok}</p>}
 
       {puedeCrear && (
         <form className="card" onSubmit={crear}>
-          <h3>Abrir un ticket</h3>
+          <h3><Icon name="ticket" /> Abrir un ticket</h3>
           <label htmlFor="as">Asunto</label>
           <input id="as" value={f.asunto} maxLength={120} onChange={set('asunto')} required />
           <label htmlFor="ds">Descripción</label>
@@ -70,12 +74,12 @@ export default function Soporte() {
               </select>
             </div>
           </div>
-          <p><button className="btn">Enviar ticket →</button></p>
+          <p><button className="btn">Enviar ticket <Icon name="arrow" size={18} /></button></p>
         </form>
       )}
 
-      <h2>{user.rol === 'CLIENTE' ? 'Mis tickets' : user.rol === 'AGENTE' ? 'Tickets asignados' : 'Todos los tickets'}</h2>
-      <div className="row">
+      <h2 className="sec-title">{user.rol === 'CLIENTE' ? 'Mis tickets' : user.rol === 'AGENTE' ? 'Tickets asignados' : 'Todos los tickets'}</h2>
+      <div className="row filters">
         <select aria-label="Estado" value={filtro.estado} onChange={fil('estado')}>
           <option value="">Todos los estados</option>
           {['abierto', 'en_curso', 'pendiente_cliente', 'resuelto', 'cerrado'].map((s) => <option key={s}>{s}</option>)}
@@ -92,12 +96,13 @@ export default function Soporte() {
           </select>
         )}
       </div>
+      <div className="table-card">
       <table>
         <thead><tr><th>Código</th><th>Asunto</th><th>Categoría</th><th>Prioridad</th><th>Estado</th><th>Agente</th></tr></thead>
         <tbody>
           {tickets.map((t) => (
             <tr key={t._id}>
-              <td><Link to={'/soporte/' + t._id}>{t.codigo}</Link></td>
+              <td><Link className="code" to={'/soporte/' + t._id}>{t.codigo}</Link></td>
               <td>{t.asunto}{user.rol !== 'CLIENTE' && ` · ${t.cliente?.nombre}`}</td>
               <td>{t.categoria?.nombre}</td>
               <td><span className={'pill ' + t.prioridad}>{t.prioridad}</span></td>
@@ -107,7 +112,8 @@ export default function Soporte() {
           ))}
         </tbody>
       </table>
-      {!tickets.length && <p>No hay tickets con estos filtros.</p>}
+      {!tickets.length && <div className="empty sm"><p>No hay tickets con estos filtros.</p></div>}
+      </div>
     </>
   );
 }

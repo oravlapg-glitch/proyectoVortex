@@ -2,52 +2,77 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiGet, apiPost } from '../api/api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import Icon from '../components/Icon';
+import SectionHead from '../components/SectionHead';
 
-// Lista los PCs (tipo="pc") o las salas (tipo="sala") y deja reservar
-export default function Espacios({ tipo }) {
+// Lista los PCs (tipo="pc") o las salas (tipo="sala") y deja reservar.
+// "embebido" = la uso dentro de la página Gaming, así que no pinto la cabecera grande
+export default function Espacios({ tipo, embebido }) {
   const [lista, setLista] = useState([]);
   const [error, setError] = useState('');
   const [abierto, setAbierto] = useState(null);
+  const esPc = tipo === 'pc';
 
   useEffect(() => {
     setAbierto(null);
     apiGet(`/espacios?tipo=${tipo}&limit=50`).then((r) => setLista(r.datos)).catch((e) => setError(e.message));
   }, [tipo]);
 
+  const elegido = lista.find((e) => e._id === abierto);
+
   return (
     <>
-      <h1>{tipo === 'pc' ? <>Gaming <span className="lime">PCs</span></> : <>Salas <span className="lime">privadas</span></>}</h1>
+      {embebido ? (
+        <h2 className="sec-title">Reserva tu <span className="lime">PC</span></h2>
+      ) : (
+        <SectionHead tag="Salas privadas" titulo={<>TU EQUIPO, <span className="lime">TU ESPACIO</span></>}>
+          Salas privadas para grupos, cumpleaños, torneos y streaming. Elige sala, día y hora.
+        </SectionHead>
+      )}
       {error && <p className="err">{error}</p>}
+
       <div className="grid">
         {lista.map((e) => (
-          <div className="card" key={e._id}>
-            <span className="tag">{e.tipo}</span>
-            <h3>{e.nombre}</h3>
-            <p>👥 {e.capacidad} · {e.specs.join(' · ')}</p>
-            <p className="price">{e.precioHora.toFixed(2)} €/h</p>
-            <button className="btn" onClick={() => setAbierto(abierto === e._id ? null : e._id)}>Reservar</button>
-          </div>
+          <article className={'space' + (abierto === e._id ? ' sel' : '')} key={e._id}>
+            <div className={'space-art ' + (esPc ? 'pc' : 'sala')}>
+              <Icon name={esPc ? 'cpu' : 'tv'} size={44} />
+              <span className="space-cap"><Icon name="users" size={14} /> {e.capacidad}</span>
+            </div>
+            <div className="space-body">
+              <h3>{e.nombre}</h3>
+              {e.descripcion && <p className="muted small">{e.descripcion}</p>}
+              <div className="specs">{e.specs.map((s) => <span key={s}>{s}</span>)}</div>
+              <div className="pcard-foot">
+                <span className="price">{e.precioHora.toFixed(2)} €<small>/h</small></span>
+                <button className={'btn sm' + (abierto === e._id ? ' v' : '')} onClick={() => setAbierto(abierto === e._id ? null : e._id)}>
+                  {abierto === e._id ? 'Cerrar' : 'Reservar'}
+                </button>
+              </div>
+            </div>
+          </article>
         ))}
       </div>
-      {abierto && <Reserva espacio={lista.find((e) => e._id === abierto)} />}
+      {!lista.length && !error && <div className="empty"><Icon name={esPc ? 'cpu' : 'tv'} size={36} /><p>No hay {esPc ? 'PCs' : 'salas'} disponibles todavía.</p></div>}
+      {elegido && <Reserva key={elegido._id} espacio={elegido} />}
     </>
   );
 }
 
 function Reserva({ espacio }) {
   const { user } = useAuth();
+  const toast = useToast();
   const nav = useNavigate();
   const hoy = new Date().toLocaleDateString('sv-SE'); // fecha local AAAA-MM-DD
   const [fecha, setFecha] = useState(hoy);
   const [franjas, setFranjas] = useState([]);
   const [inicio, setInicio] = useState(null);
   const [horas, setHoras] = useState(1);
-  const [msg, setMsg] = useState(null);
 
   const cargar = () =>
     apiGet(`/reservas/disponibilidad?espacio=${espacio._id}&fecha=${fecha}`)
       .then((r) => { setFranjas(r.franjas); setInicio(null); setHoras(1); })
-      .catch((e) => setMsg({ err: e.message }));
+      .catch((e) => toast(e.message, 'err'));
   useEffect(() => { cargar(); }, [fecha, espacio._id]);
 
   const libre = (h) => franjas.find((f) => f.hora === h)?.libre;
@@ -59,36 +84,51 @@ function Reserva({ espacio }) {
     if (!user) return nav('/login');
     try {
       await apiPost('/reservas', { espacio: espacio._id, fecha, horaInicio: inicio, horas: h });
-      setMsg({ ok: '¡Reserva confirmada! Puedes verla en Mi cuenta.' });
+      toast('¡Reserva confirmada! Puedes verla en Mi cuenta.');
       cargar();
-    } catch (e) { setMsg({ err: e.message }); }
+    } catch (e) { toast(e.message, 'err'); }
   };
 
   return (
-    <section className="card" style={{ marginTop: 20 }}>
-      <h2>Reservar {espacio.nombre}</h2>
-      <label htmlFor="fecha">Fecha</label>
-      <input id="fecha" type="date" min={hoy} value={fecha} onChange={(e) => { setMsg(null); setFecha(e.target.value); }} />
-      <label>Hora de inicio (abrimos de 10:00 a 23:00)</label>
-      <div className="slots">
-        {franjas.map((f) => (
-          <button key={f.hora} className={inicio === f.hora ? 'sel' : ''} disabled={!f.libre || (fecha === hoy && f.hora <= new Date().getHours())} onClick={() => setInicio(f.hora)}>
-            {f.hora}:00
-          </button>
-        ))}
+    <section className="card booking">
+      <div className="booking-head">
+        <span className="qi"><Icon name="calendar" /></span>
+        <div><span className="tag">Nueva reserva</span><h2>{espacio.nombre}</h2></div>
       </div>
-      {inicio !== null && (
-        <>
-          <label htmlFor="horas">Horas</label>
-          <select id="horas" value={h} onChange={(e) => setHoras(Number(e.target.value))}>
-            {Array.from({ length: max }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
-          <p className="price">Total: {(espacio.precioHora * h).toFixed(2)} €</p>
-          <button className="btn" onClick={reservar}>Confirmar reserva →</button>
-        </>
-      )}
-      {msg?.err && <p className="err">{msg.err}</p>}
-      {msg?.ok && <p className="ok">{msg.ok}</p>}
+      <div className="booking-grid">
+        <div>
+          <label htmlFor="fecha">1 · Fecha</label>
+          <input id="fecha" type="date" min={hoy} value={fecha} onChange={(e) => setFecha(e.target.value)} />
+          <label>2 · Hora de inicio <small className="muted">(abrimos de 10:00 a 23:00)</small></label>
+          <div className="slots">
+            {franjas.map((f) => (
+              <button key={f.hora} className={inicio === f.hora ? 'sel' : ''} disabled={!f.libre || (fecha === hoy && f.hora <= new Date().getHours())} onClick={() => setInicio(f.hora)}>
+                {f.hora}:00
+              </button>
+            ))}
+          </div>
+          <p className="legend small muted"><i className="dot free" /> libre <i className="dot busy" /> ocupado</p>
+        </div>
+        <div className="summary">
+          <label>3 · Duración</label>
+          {inicio === null ? <p className="muted">Elige primero una hora de inicio.</p> : (
+            <div className="slots">
+              {Array.from({ length: max }, (_, i) => i + 1).map((n) => (
+                <button key={n} className={h === n ? 'sel' : ''} onClick={() => setHoras(n)}>{n} h</button>
+              ))}
+            </div>
+          )}
+          <dl>
+            <dt>Fecha</dt><dd>{fecha.split('-').reverse().join('/')}</dd>
+            <dt>Horario</dt><dd>{inicio === null ? '—' : `${inicio}:00 - ${inicio + h}:00`}</dd>
+            <dt>Precio/hora</dt><dd>{espacio.precioHora.toFixed(2)} €</dd>
+          </dl>
+          <div className="cart-total"><span>Total</span><span className="price">{inicio === null ? '0.00' : (espacio.precioHora * h).toFixed(2)} €</span></div>
+          <button className="btn full" disabled={inicio === null} onClick={reservar}>
+            {user ? 'Confirmar reserva' : 'Inicia sesión para reservar'} <Icon name="arrow" size={18} />
+          </button>
+        </div>
+      </div>
     </section>
   );
 }
