@@ -1,32 +1,31 @@
 import { useState } from 'react';
-import { useCart } from '../context/CartContext';
-import { useToast } from '../context/ToastContext';
-import Icon from './Icon';
+import Foto, { slug } from './Foto';
+import AddButton from './AddButton';
 
-// Icono y color de fondo según la categoría (los productos de ejemplo no traen imagen)
+// Color de la tarjeta según la categoría
 const ARTE = {
-  ropa: { icon: 'shirt', color: 'violet' },
-  perifericos: { icon: 'keyboard', color: 'cyan' },
-  accesorios: { icon: 'box', color: 'lime' },
+  ropa: { color: 'violet' },
+  perifericos: { color: 'cyan' },
+  accesorios: { color: 'lime' },
 };
 
+// Foto del producto: la del backend (campo imagen) o /img/productos/<nombre>.jpg
 export function ProductArt({ p }) {
-  const a = ARTE[p.categoria] || { icon: 'box', color: 'violet' };
-  if (p.imagen) return <div className="art"><img src={p.imagen} alt={p.nombre} /></div>;
-  return <div className={'art ' + a.color}><Icon name={a.icon} size={56} /></div>;
+  const a = ARTE[p.categoria] || { color: 'violet' };
+  return (
+    <div className={'art ' + a.color}>
+      <Foto key={p._id} src={p.imagen || `/img/productos/${slug(p.nombre)}.jpg`} alt={p.nombre} />
+    </div>
+  );
 }
 
 export default function ProductCard({ p }) {
-  const { add } = useCart();
-  const toast = useToast();
   const [talla, setTalla] = useState('');
   const agotado = p.stock < 1;
   const necesitaTalla = p.tallas?.length > 0;
 
-  const anadir = () => { add(p, talla || undefined); toast(`${p.nombre}${talla ? ' (' + talla + ')' : ''} añadido al carrito`); };
-
   return (
-    <article className="pcard">
+    <article className={'pcard ac-' + (ARTE[p.categoria]?.color || 'violet')}>
       {agotado ? <span className="flag red-bg">Agotado</span> : p.stock <= 5 && <span className="flag cyan-bg">Últimas {p.stock}</span>}
       <ProductArt p={p} />
       <span className="tag">{p.categoria}</span>
@@ -40,10 +39,7 @@ export default function ProductCard({ p }) {
       )}
       <div className="pcard-foot">
         <span className="price">{p.precio.toFixed(2)} €</span>
-        <button className="cart-btn" aria-label={'Añadir ' + p.nombre} title={necesitaTalla && !talla ? 'Elige una talla' : 'Añadir al carrito'}
-          disabled={agotado || (necesitaTalla && !talla)} onClick={anadir}>
-          <Icon name="cart" size={18} />
-        </button>
+        <AddButton p={p} talla={talla || undefined} disabled={necesitaTalla && !talla} texto={necesitaTalla && !talla ? 'Elige talla' : 'Añadir'} />
       </div>
     </article>
   );

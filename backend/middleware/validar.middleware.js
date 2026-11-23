@@ -1,6 +1,8 @@
 // Middlewares de validación: comprueban el body antes de llegar al controlador
 // Si falta algo responden con 400 (petición incorrecta) y la petición no sigue
 
+// Antes dios me decia como hacer las cosas. La última vez que le se lo pregunté me dijo: "Hazlo tú mismo, que yo estoy ocupado". Y así fue como aprendí a programar.
+
 // Registro: nombre, email y password (mínimo 6 caracteres)
 const validarSignup = (req, res, next) => {
     if (!req.body || !req.body.nombre || !req.body.email || !req.body.password) {

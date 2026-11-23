@@ -7,7 +7,7 @@ const TABS = [['metricas', 'chart'], ['usuarios', 'users'], ['productos', 'cart'
 
 // Campos de cada CRUD: [nombre, tipo]. Si el tipo es un array, lo pinto como <select>
 const CRUD = {
-  productos: { lista: '/productos', campos: [['nombre', 'text'], ['categoria', ['ropa', 'perifericos', 'accesorios']], ['precio', 'number'], ['stock', 'number'], ['tallas', 'list']] },
+  productos: { lista: '/productos', campos: [['nombre', 'text'], ['categoria', ['ropa', 'perifericos', 'accesorios', 'comida', 'bebida', 'bonos', 'torneos']], ['descripcion', 'opt'], ['precio', 'number'], ['stock', 'number'], ['tallas', 'list']] },
   espacios: { lista: '/espacios/todos', campos: [['nombre', 'text'], ['tipo', ['pc', 'sala']], ['capacidad', 'number'], ['precioHora', 'number'], ['specs', 'list']] },
 };
 
@@ -115,7 +115,7 @@ function Crud({ tipo }) {
                   <option value="">Elige…</option>{t.map((o) => <option key={o}>{o}</option>)}
                 </select>
               ) : (
-                <input id={k} type={t === 'number' ? 'number' : 'text'} step="any" min={t === 'number' ? 0 : undefined} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} required={t !== 'list'} />
+                <input id={k} type={t === 'number' ? 'number' : 'text'} step="any" min={t === 'number' ? 0 : undefined} value={f[k] ?? ''} onChange={(e) => setF({ ...f, [k]: e.target.value })} required={t !== 'list' && t !== 'opt'} />
               )}
             </div>
           ))}
@@ -127,12 +127,13 @@ function Crud({ tipo }) {
       </form>
       <div className="table-card">
       <table>
-        <thead><tr><th>Nombre</th><th>Tipo</th><th>Precio</th><th>Activo</th><th></th></tr></thead>
+        <thead><tr><th>Nombre</th><th>Tipo</th><th>Precio</th>{tipo === 'productos' && <th>Stock</th>}<th>Activo</th><th></th></tr></thead>
         <tbody>
           {items.map((it) => (
             <tr key={it._id}>
-              <td>{it.nombre}</td><td>{it.categoria || it.tipo}</td>
+              <td>{it.nombre}</td><td><span className="pill">{it.categoria || it.tipo}</span></td>
               <td>{(it.precio ?? it.precioHora).toFixed(2)} €</td>
+              {tipo === 'productos' && <td className={it.stock < 1 ? 'red' : ''}>{it.stock}</td>}
               <td><span className={'pill ' + (it.activo ? 'confirmada' : 'cancelada')}>{it.activo ? 'sí' : 'no'}</span></td>
               <td className="actions">
                 <button className="btn v sm" onClick={() => editar(it)}>Editar</button>
@@ -156,7 +157,7 @@ function Datos() {
   return (
     <div className="card">
       <h3><Icon name="database" /> Datos de ejemplo</h3>
-      <p className="muted">Cargo los datos de prueba del backend (no se duplican si ya existen).</p>
+      <p className="muted">Cargo los datos de prueba del backend (no se duplican si ya existen). «productos» incluye la tienda, la carta, los bonos y los torneos.</p>
       <div className="row left">
         {['usuarios', 'espacios', 'categorias', 'productos'].map((r) => <button key={r} className="btn" onClick={() => cargar(r)}>Cargar {r}</button>)}
       </div>

@@ -3,23 +3,23 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import Icon from './Icon';
+import { CartDrawer } from './CartPanel';
 
 // Enlaces principales (los uso en la barra de arriba y en el menú lateral)
 export const SECCIONES = [
-  { to: '/', txt: 'Inicio', icon: 'home', sub: 'Bienvenido' },
-  { to: '/tienda', txt: 'Tienda', icon: 'cart', sub: 'Periféricos y setups' },
-  { to: '/gaming', txt: 'Gaming', icon: 'gamepad', sub: 'Tarifas y bonos' },
-  { to: '/comida', txt: 'Comida & Bebida', icon: 'food', sub: 'Comida y bebidas' },
-  { to: '/salas', txt: 'Salas privadas', icon: 'monitor', sub: 'Tu espacio, tu juego' },
-  { to: '/torneos', txt: 'Torneos', icon: 'trophy', sub: 'Compite y gana' },
+  { to: '/', txt: 'Inicio', icon: 'home', sub: 'Bienvenido', color: 'violet' },
+  { to: '/tienda', txt: 'Tienda', icon: 'cart', sub: 'Periféricos y setups', color: 'violet' },
+  { to: '/gaming', txt: 'Gaming', icon: 'gamepad', sub: 'Tarifas y bonos', color: 'lime' },
+  { to: '/comida', txt: 'Comida & Bebida', icon: 'food', sub: 'Comida y bebidas', color: 'cyan' },
+  { to: '/salas', txt: 'Salas privadas', icon: 'monitor', sub: 'Tu espacio, tu juego', color: 'violet' },
+  { to: '/torneos', txt: 'Torneos', icon: 'trophy', sub: 'Compite y gana', color: 'lime' },
 ];
 
 const cls = ({ isActive }) => (isActive ? 'active' : '');
 
 function Topbar({ onMenu }) {
   const { user, logout } = useAuth();
-  const { lineas } = useCart();
-  const unidades = lineas.reduce((s, l) => s + l.cantidad, 0);
+  const { unidades, setAbierto } = useCart();
 
   return (
     <header className="topbar">
@@ -32,10 +32,10 @@ function Topbar({ onMenu }) {
         {SECCIONES.map((s) => <NavLink key={s.to} to={s.to} end={s.to === '/'} className={cls}>{s.txt}</NavLink>)}
       </nav>
       <div className="top-actions">
-        <Link to="/tienda" className="icon-btn" aria-label={`Carrito (${unidades})`}>
+        <button className="icon-btn cart-top" aria-label={`Abrir carrito (${unidades})`} onClick={() => setAbierto(true)}>
           <Icon name="cart" />
           {unidades > 0 && <span className="badge">{unidades}</span>}
-        </Link>
+        </button>
         {user ? (
           <>
             <Link to="/cuenta" className="user-chip">
@@ -63,7 +63,7 @@ function Sidebar({ abierto, onClose }) {
       <aside className={'sidebar' + (abierto ? ' open' : '')}>
         <nav aria-label="Secciones">
           {SECCIONES.map((s) => (
-            <NavLink key={s.to} to={s.to} end={s.to === '/'} className={cls}><Icon name={s.icon} />{s.txt}</NavLink>
+            <NavLink key={s.to} to={s.to} end={s.to === '/'} className={(a) => cls(a) + ' ac-' + s.color}><Icon name={s.icon} />{s.txt}</NavLink>
           ))}
           {user && (
             <>
@@ -76,7 +76,6 @@ function Sidebar({ abierto, onClose }) {
         </nav>
         <div className="side-promo">
           <p>CONECTA<br /><span className="lime">JUEGA</span><br />DISFRUTA</p>
-          <img src="/logo.png" alt="" />
         </div>
       </aside>
     </>
@@ -96,13 +95,16 @@ function Footer() {
 // Esqueleto de la web: barra superior + menú lateral + contenido + pie
 export default function Layout({ children }) {
   const [abierto, setAbierto] = useState(false);
+  const carrito = useCart();
   const { pathname } = useLocation();
-  useEffect(() => { setAbierto(false); window.scrollTo(0, 0); }, [pathname]); // al cambiar de página cierro el menú y subo
+  // al cambiar de página cierro el menú y el carrito y subo arriba
+  useEffect(() => { setAbierto(false); carrito.setAbierto(false); window.scrollTo(0, 0); }, [pathname]);
 
   return (
     <div className="shell">
       <Topbar onMenu={() => setAbierto(true)} />
       <Sidebar abierto={abierto} onClose={() => setAbierto(false)} />
+      <CartDrawer />
       <div className="content">
         <main>{children}</main>
         <Footer />

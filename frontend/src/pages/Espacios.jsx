@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Icon from '../components/Icon';
 import SectionHead from '../components/SectionHead';
+import Foto, { slug } from '../components/Foto';
 
 // Lista los PCs (tipo="pc") o las salas (tipo="sala") y deja reservar.
 // "embebido" = la uso dentro de la página Gaming, así que no pinto la cabecera grande
@@ -36,7 +37,7 @@ export default function Espacios({ tipo, embebido }) {
         {lista.map((e) => (
           <article className={'space' + (abierto === e._id ? ' sel' : '')} key={e._id}>
             <div className={'space-art ' + (esPc ? 'pc' : 'sala')}>
-              <Icon name={esPc ? 'cpu' : 'tv'} size={44} />
+              <Foto src={e.imagen || `/img/espacios/${slug(e.nombre)}.jpg`} alt={e.nombre} />
               <span className="space-cap"><Icon name="users" size={14} /> {e.capacidad}</span>
             </div>
             <div className="space-body">

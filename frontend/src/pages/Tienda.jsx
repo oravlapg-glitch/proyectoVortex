@@ -1,53 +1,36 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { apiGet, apiPost } from '../api/api';
-import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
-import { useToast } from '../context/ToastContext';
+import { apiGet } from '../api/api';
+import CartPanel from '../components/CartPanel';
+import { TIENDA_CATS } from '../data/vortex';
 import Icon from '../components/Icon';
 import ProductCard from '../components/ProductCard';
 import SectionHead from '../components/SectionHead';
 
 const CATS = [
-  { v: '', txt: 'Todo', icon: 'star' },
-  { v: 'perifericos', txt: 'Periféricos', icon: 'keyboard' },
-  { v: 'accesorios', txt: 'Accesorios', icon: 'box' },
-  { v: 'ropa', txt: 'Ropa', icon: 'shirt' },
+  { v: '', txt: 'Todo', icon: 'star', color: 'violet' },
+  { v: 'perifericos', txt: 'Periféricos', icon: 'keyboard', color: 'cyan' },
+  { v: 'accesorios', txt: 'Accesorios', icon: 'box', color: 'lime' },
+  { v: 'ropa', txt: 'Ropa', icon: 'shirt', color: 'violet' },
 ];
 
 export default function Tienda() {
-  const { user } = useAuth();
-  const { lineas, quitar, vaciar } = useCart();
-  const toast = useToast();
-  const nav = useNavigate();
   const [prods, setProds] = useState([]);
   const [cat, setCat] = useState('');
   const [q, setQ] = useState('');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
+  // En "Todo" quito la comida, los bonos y los torneos: esos tienen su propia página
   const cargar = () =>
     apiGet(`/productos?categoria=${cat}&q=${encodeURIComponent(q)}`)
-      .then((r) => { setProds(r); setError(''); })
+      .then((r) => { setProds(r.filter((p) => TIENDA_CATS.includes(p.categoria))); setError(''); })
       .catch((e) => setError(e.message))
       .finally(() => setCargando(false));
   useEffect(() => { cargar(); }, [cat, q]);
 
-  const total = lineas.reduce((s, l) => s + l.precio * l.cantidad, 0);
-
-  const pedir = async () => {
-    if (!user) return nav('/login');
-    try {
-      const p = await apiPost('/pedidos', { lineas: lineas.map((l) => ({ producto: l.producto, cantidad: l.cantidad, talla: l.talla })) });
-      vaciar();
-      toast(`Pedido ${p.codigo} creado. Lo recoges en el local.`);
-      cargar(); // recargo para ver el stock actualizado
-    } catch (e) { toast(e.message, 'err'); }
-  };
-
   return (
     <>
-      <SectionHead tag="Tienda" titulo={<>EQUÍPATE PARA EL <span className="lime">SIGUIENTE NIVEL</span></>}>
+      <SectionHead tag="Tienda" titulo={<>EQUÍPATE PARA EL <span className="violet-txt">SIGUIENTE NIVEL</span></>}>
         Periféricos, accesorios y merch oficial. Pides online y lo recoges en el local.
       </SectionHead>
       {error && <p className="err">{error}</p>}
@@ -61,7 +44,7 @@ export default function Tienda() {
             </label>
             <div className="chips" role="group" aria-label="Categoría">
               {CATS.map((c) => (
-                <button key={c.v} className={'chip' + (cat === c.v ? ' sel' : '')} onClick={() => setCat(c.v)}>
+                <button key={c.v} className={'chip ac-' + c.color + (cat === c.v ? ' sel' : '')} onClick={() => setCat(c.v)}>
                   <Icon name={c.icon} size={16} />{c.txt}
                 </button>
               ))}
@@ -76,22 +59,7 @@ export default function Tienda() {
 
         <aside className="card cart sticky">
           <h3><Icon name="cart" /> Mi pedido</h3>
-          {!lineas.length && <div className="empty sm"><p>El carrito está vacío.</p><small className="muted">Añade algo con el botón verde.</small></div>}
-          <ul className="cart-list">
-            {lineas.map((l, i) => (
-              <li key={i}>
-                <span className="qty">{l.cantidad}×</span>
-                <span className="grow">{l.nombre}{l.talla && <small> · {l.talla}</small>}</span>
-                <b>{(l.precio * l.cantidad).toFixed(2)} €</b>
-                <button className="icon-btn sm danger" aria-label={'Quitar ' + l.nombre} onClick={() => quitar(i)}><Icon name="trash" size={16} /></button>
-              </li>
-            ))}
-          </ul>
-          <div className="cart-total"><span>Total</span><span className="price">{total.toFixed(2)} €</span></div>
-          <button className="btn full" disabled={!lineas.length} onClick={pedir}>
-            {user ? 'Hacer pedido' : 'Inicia sesión para pedir'} <Icon name="arrow" size={18} />
-          </button>
-          <p className="muted small center">Pago y recogida en el local</p>
+          <CartPanel alPedir={cargar} />
         </aside>
       </div>
     </>
